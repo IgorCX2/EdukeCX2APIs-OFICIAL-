@@ -19,6 +19,10 @@ const UserConfig = db.define('userconfig', {
         type: Sequelize.STRING,
         allowNull: false
     },
+    endereco:{
+        type: Sequelize.STRING,
+        allowNull: false
+    },
     stats:{
         type: Sequelize.STRING(20),
         defaultValue: '0',
