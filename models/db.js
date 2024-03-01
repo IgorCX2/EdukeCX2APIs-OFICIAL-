@@ -8,7 +8,13 @@ const sequelize = new Sequelize(process.env.Name, process.env.User, process.env.
   define: {
     charset: 'utf8mb4',
     collate: 'utf8mb4_general_ci'
-}
+  },
+  pool: {
+    max: 50,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
+  },
 });
 sequelize.authenticate()
 .then(()=>{

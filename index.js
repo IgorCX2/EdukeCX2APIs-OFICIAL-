@@ -3,12 +3,12 @@ const { RateLimiterMemory } = require('rate-limiter-flexible');
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
-const diaAtual = new Date();
 const app = express();
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const whitelist = ['http://localhost:3000', 'http://aprendacomeduke.com.br', undefined, 'http://localhost:8080'];
+const whitelistMiddleware = ['/api/usuariosInfos/salva-plano','/api/frases/','/api/usuariosInfos/mudar-status','/api/usuariosInfos/cad-nivel', '/api/selecionarQuestoes/diagnostico', '/api/analisarQuestoes/diagnostico'];
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -28,13 +28,17 @@ const limiterLoginWronger = new RateLimiterMemory({
   duration: windowMs,
 });
 async function createDecryptMiddleware(req, res, next) {
-  console.log(req.headers)
   const route = req.path;
+  console.log(req.body)
+  console.log(`Tipo de requisição para ${route}: ${req.method} (${req.headers['x-forwarded-for']})`);
+  if(whitelistMiddleware.indexOf(route) !== -1 || req.method == "GET"){
+    return next();
+  }
   try{
     const rateLimiterRes = await limiterLoginWronger.consume(req.headers['x-forwarded-for']);
     try {
-      req.body.dados = decryptData(req.body.dados, process.env.CHAVE_CODIFICADORA.split(',')[diaAtual.getDate()]);
-      req.body.dados.endereco = req.headers['x-forwarded-for']
+      req.body.dados = decryptData(req.body.dados);
+      req.body.dados.endereco = "req.headers['x-forwarded-for']"
       next();
     } catch (error) {
       console.error(`Erro na descriptografia para ${route}:`, error);
@@ -50,8 +54,26 @@ async function createDecryptMiddleware(req, res, next) {
 }
 app.use(createDecryptMiddleware);
 
+const analisarQuestoes = require("./api/analisarQuestoes");
+app.use("/api/analisarQuestoes", analisarQuestoes);
+
 const contaRegistro = require('./api/contaRegistro');
 app.use('/api/contaRegistro', contaRegistro);
 
-const PORT = process.env.PORT || 3306;
+const frases = require("./api/frases");
+app.use("/api/frases", frases);
+
+const usuariosInfos = require("./api/usuariosInfos");
+app.use("/api/usuariosInfos", usuariosInfos);
+
+const selecionarQuestoes = require("./api/selecionarQuestoes");
+app.use("/api/selecionarQuestoes", selecionarQuestoes);
+
+const questoes = require("./api/questoes");
+app.use("/api/questoes", questoes);
+
+const estudarInfos = require("./api/estudar");
+app.use("/api/estudar", estudarInfos);
+
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Servidor iniciado na porta ${PORT}`));
